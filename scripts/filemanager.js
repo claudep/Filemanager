@@ -9,6 +9,43 @@
  *	@copyright	Authors
  */
 
+/* Disable/enable context menu items respecting capabilites */
+if(jQuery)( function() {
+	$.extend($.fn, {
+		contextMenuCapabilities: function( view ) {
+			$(this).each( function() {
+				var el = $(this);
+				$(this).mousedown( function() {
+					
+					$('#itemOptions').enableContextMenuItems();
+					if( view == 'grid')	var path = $(el).find('img').attr('alt');
+					else if( view == 'list' ) var path = $('td:first-child', this).attr('title');
+					else /*if( view == 'filetree' )*/ var path = $(el).attr('rel');
+					var url = fileConnector + '?path=' + path + '&mode=getinfo';
+					if ($.urlParam('type')) url += '&type=' + $.urlParam('type');
+					$.getJSON(url, function(data){
+						if(data){
+							if (typeof(data['Capabilities']) == "undefined") var capabilities = null;
+							else var capabilities = data['Capabilities'];
+							if (capabilities != null) {
+								/* Capabilites:
+								 * select, selectThumbnail, selectLinkedThumbnail, rename, delete, download
+								 */
+								$('#itemOptions').disableContextMenuItems();
+								for( i in capabilities ) {
+									$('#itemOptions').enableContextMenuItems('#'+capabilities[i]);
+								}
+							}
+						}
+					});
+					
+				});
+			});
+		}
+	});
+})(jQuery);
+
+
 (function($) {
  
 // function to retrieve GET params
@@ -436,7 +473,7 @@ var addFolder = function(parent, name){
 					var path = $(el).attr('rel');
 					setMenus(action, path);
 				}
-		);
+		).contextMenuCapabilities('filetree');
 	}
 	
 	$.prompt(lg.successful_added_folder);
@@ -631,7 +668,7 @@ var getFolderInfo = function(path){
 			}).contextMenu({ menu: 'itemOptions' }, function(action, el, pos){
 				var path = $(el).find('img').attr('alt');
 				setMenus(action, path);
-			});
+			}).contextMenuCapabilities('grid');
 		} else {
 			$('#fileinfo').find('td:first-child').each(function(){
 				var path = $(this).attr('title');
@@ -645,7 +682,7 @@ var getFolderInfo = function(path){
 			}).contextMenu({ menu: 'itemOptions' }, function(action, el, pos){
 				var path = $('td:first-child', el).attr('title');
 				setMenus(action, path);
-			});
+			}).contextMenuCapabilities('list');
 			
 			$('#fileinfo').find('table').tablesorter({
 				textExtraction: function(node){					
